@@ -4,7 +4,7 @@ import sys
 import logging
 import json
 
-logger = logging.getLogger()
+logger = logging.getLogger("lol")
 
 LOGGING = """
         {
@@ -29,7 +29,7 @@ LOGGING = """
             }
           },
           "loggers": {
-            "olaf": {
+            "lol": {
               "level": "INFO",
               "handlers": ["console","file"],
               "propagate": false
@@ -43,20 +43,25 @@ LOGGING = """
 """
 
 
-def logging_hook(func):
+def elastic_logs(func):
     @functools.wraps(func)
     def hook_wrapper(*args, **kwargs):
-        logger.info("Doing hook #1")
         sys.excepthook = except_jsonhook
-
-        with open("application.json", "r") as f:
-            application_config = json.loads(f.read())
-
         logging.config.dictConfig(json.loads(LOGGING))
-
-        return func(*args, **kwargs, config=application_config)
+        return func(*args, **kwargs)
 
     return hook_wrapper
+
+
+def configurable(filename):
+    def configure(func):
+        @functools.wraps(func)
+        def conf_wrapper(*args, **kwargs):
+            return func(config=_load_application_config(filename), *args, **kwargs)
+
+        return conf_wrapper
+
+    return configure
 
 
 def except_jsonhook(exc_type, exc_value, exc_traceback):
@@ -69,3 +74,8 @@ def except_jsonhook(exc_type, exc_value, exc_traceback):
 
     logger.critical(f"Uncaught exception occurred, application will terminate: {exception}",
                     exc_info=(exc_type, exc_value, exc_traceback))
+
+
+def _load_application_config(file_name):
+    with open(file_name, "r") as f:
+        return json.loads(f.read())

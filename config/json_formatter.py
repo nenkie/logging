@@ -3,6 +3,7 @@ import json
 from datetime import datetime
 import traceback
 
+
 class JSONFormatter(logging.Formatter):
     def __init__(self):
         super().__init__(self, validate=False)
